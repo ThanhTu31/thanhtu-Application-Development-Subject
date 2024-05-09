@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
-                // Error occurred while creating the File
                 ex.printStackTrace();
+                Toast.makeText(this, "Error creating image file: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
             }
             if (photoFile != null) {
                 photoUri = Uri.fromFile(photoFile);
@@ -91,9 +91,14 @@ public class MainActivity extends AppCompatActivity {
 
                 // Thêm dòng sau để gọi Intent và đợi kết quả trả về
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            } else {
+                Toast.makeText(this, "Error creating photo file", Toast.LENGTH_SHORT).show();
             }
+        } else {
+            Toast.makeText(this, "No camera app available to handle the request", Toast.LENGTH_SHORT).show();
         }
     }
+
 
 
     private File createImageFile() throws IOException {
@@ -101,25 +106,38 @@ public class MainActivity extends AppCompatActivity {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        // mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            // Image captured and saved to fileUri specified in the Intent
-            imageViewProfile.setImageURI(photoUri);
+        if (storageDir != null) {
+            File image = File.createTempFile(
+                    imageFileName,  /* prefix */
+                    ".jpg",         /* suffix */
+                    storageDir      /* directory */
+            );
+            return image;
+        } else {
+            throw new IOException("Error getting external storage directory");
         }
     }
+
+
+    @Override
+
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMAGE_CAPTURE) {
+            if (resultCode == RESULT_OK) {
+                if (photoUri != null) {
+                    imageViewProfile.setImageURI(photoUri);
+                } else {
+                    Toast.makeText(this, "Error: Photo URI is null", Toast.LENGTH_SHORT).show();
+                }
+            } else if (resultCode == RESULT_CANCELED) {
+                Toast.makeText(this, "Photo capture cancelled", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Error: Photo capture failed", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 
     private void saveDataToFile() {
         String fullName = ((EditText) findViewById(R.id.editTextFullName)).getText().toString();
